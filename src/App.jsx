@@ -66,7 +66,9 @@ export default function App() {
           image: card.image,
           summary: card.summary,
           content: card.content,
-          cardId: card.id
+          cardId: card.id,
+          tags: card.tags || [],
+          opacity: 1
         },
         meta: { cardId: card.id },
         index: `a${idx}`
@@ -76,41 +78,32 @@ export default function App() {
     placed.current = true
   }, [appReady, positions])
 
-  // visibility sync (create missing, remove filtered out)
+  // visibility + prop sync (merge JSON content into shapes, hide via opacity)
   useEffect(() => {
     if (!appReady || !editorRef.current) return
     const editor = editorRef.current
     const current = editor.getCurrentPageShapes().filter(s => s.type === 'card')
-    const byCardId = new Map(current.map(s => [s.props.cardId, s]))
-
-    const toDelete = current.filter(s => !visibleIds.has(s.props.cardId)).map(s => s.id)
-    if (toDelete.length) editor.deleteShapes(toDelete)
-
-    const toAdd = cardsData.filter(c => visibleIds.has(c.id) && !byCardId.has(c.id))
-    if (toAdd.length) {
-      editor.createShapes(
-        toAdd.map((card, idx) => {
-          const pos = positions[card.id] || randomPos(idx)
-          return {
-            id: createShapeId(card.id),
-            type: 'card',
-            x: pos.x,
-            y: pos.y,
-            props: {
-              w: 360,
-              h: 420,
-              title: card.title,
-              image: card.image,
-              summary: card.summary,
-              content: card.content,
-              cardId: card.id
-            },
-            meta: { cardId: card.id },
-            index: `b${idx}`
-          }
-        })
-      )
-    }
+    const cardById = new Map(cardsData.map(c => [c.id, c]))
+    const updates = current.map(shape => {
+      const card = cardById.get(shape.props.cardId)
+      const opacity = visibleIds.has(shape.props.cardId) ? 1 : 0
+      if (!card) return null
+      return {
+        id: shape.id,
+        type: 'card',
+        props: {
+          ...shape.props,
+          title: card.title,
+          image: card.image,
+          summary: card.summary,
+          content: card.content,
+          cardId: card.id,
+          tags: card.tags || [],
+          opacity
+        }
+      }
+    }).filter(Boolean)
+    if (updates.length) editor.updateShapes(updates)
   }, [appReady, visibleIds, positions])
 
   function toggleCollection(c, checked) {
@@ -140,7 +133,13 @@ export default function App() {
       .forEach(shape => {
         const next = randomPos(i++)
         pos[shape.props.cardId] = next
-        updates.push({ id: shape.id, type: 'card', x: next.x, y: next.y })
+        updates.push({
+          id: shape.id,
+          type: 'card',
+          x: next.x,
+          y: next.y,
+          props: { ...shape.props }
+        })
       })
     setPositions(p => ({ ...p, ...pos }))
     if (updates.length) editor.updateShapes(updates)
