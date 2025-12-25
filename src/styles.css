@@ -7,13 +7,122 @@ html,body,#root { height: 100%; margin: 0; }
 .tldraw-root { height: 100%; }
 
 /* lighten resize handles for card selection */
-.tl-resize-handle {
+/* Only target the rotate corners (visual corners) to avoid showing side handles */
+.tl-rotate-corner {
   background: #d6d6d6 !important;
   border-color: #d6d6d6 !important;
+  opacity: 1 !important; /* Ensure they are visible */
+  display: block !important;
+}
+
+/* Ensure side handles remain transparent/hidden */
+.tl-resize-handle {
+  background: transparent !important;
+  border: none !important;
 }
 
 .tl-container {
   --tl-selection-color: #d6d6d6;
   --tl-user-handles-fill: #d6d6d6;
   --tl-user-handles-stroke: #d6d6d6;
+}
+
+/* macOS 9 Title Bar Styles */
+.macos-title-bar {
+  background-color: #cccccc;
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  border-bottom: 1px solid #000;
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+}
+
+.macos-btn {
+  width: 12px;
+  height: 12px;
+  background-color: #c0c0c0;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #404040;
+  border-bottom: 1px solid #404040;
+  box-shadow: 1px 1px 0 #000;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.macos-btn:active {
+  border-top: 1px solid #404040;
+  border-left: 1px solid #404040;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  box-shadow: none;
+}
+
+.macos-title-container {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin: 0 8px;
+  overflow: hidden;
+}
+
+.macos-lines {
+  position: relative;
+  flex-grow: 1;
+  height: 17px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    #808080 0px,
+    #808080 1px,
+    #aaaaaa 1px,
+    #cccccc 3px
+  );
+  min-width: 10px;
+}
+
+
+/* Vertical bevel bars at the ends of the lines */
+.macos-lines::before,
+.macos-lines::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px; /* Width of the vertical bar */
+  background-color: #cccccc; /* Matches the title bar background */
+  z-index: 1;
+}
+
+.macos-lines::before {
+  left: 0;
+  border-right: 1px solid #808080;
+}
+
+.macos-lines::after {
+  right: 0;
+  border-left: 1px solid #fff;
+}
+
+
+.macos-title-text {
+  position: relative;
+  z-index: 1;
+  background-color: #cccccc;
+  padding: 0 6px;
+  font-weight: bold;
+  color: #000;
+  font-family: "Chicago", "Charcoal", "Geneva", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.macos-btn-group {
+  display: flex;
+  gap: 6px;
 }

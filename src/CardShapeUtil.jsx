@@ -29,7 +29,7 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
   getEffectiveHeight(shape) {
     const { w, h, showDetails = true } = shape.props
     if (showDetails) return h
-    const titleH = 40
+    const titleH = 30
     const reserved = titleH + 0 + 20
     const fallbackImageH = Math.max(140, Math.min(220, h * 0.45))
     const maxImageH = Math.max(100, h - reserved)
@@ -54,7 +54,7 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
   component(shape) {
     const { w, h, title, image, summary, tags = [], opacity = 1, collection, showDetails = true } = shape.props
     const [aspectRatio, setAspectRatio] = React.useState(null)
-    const titleH = 40
+    const titleH = 30
     const tagsH = showDetails ? 40 : 0
     const reserved = titleH + tagsH + 20
     const fallbackImageH = Math.max(140, Math.min(220, h * 0.45))
@@ -65,7 +65,7 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
     const summaryH = showDetails ? Math.max(80, h - titleH - imageH - tagsH - 10) : 0
     const summaryFontSize = Math.max(8, Math.min(14, h * 0.04))
     const tagFontSize = Math.max(6, Math.min(10, h * 0.02))
-    const titleFontSize = Math.max(9, Math.min(20, h * 0.05))
+    const titleFontSize = Math.max(8, Math.min(12, h * 0.05))
     const effectiveHeight = showDetails ? h : titleH + imageH
     const cardStyle = getSectionStyle('card', collection)
     const titleStyle = getSectionStyle('titleBar', collection)
@@ -91,47 +91,45 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
             visibility: opacity === 0 ? 'hidden' : 'visible'
           }}
         >
-          <div
-            style={{
-              ...titleStyle,
-              height: titleH,
-              padding: '8px 12px',
-              fontWeight: 700,
-              fontSize: titleFontSize,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {title || '(untitled)'}
-            </span>
-            <button
+          <div className="macos-title-bar" style={{ height: titleH }}>
+            <div 
+              className="macos-btn" 
               onPointerDown={e => e.stopPropagation()}
               onClick={e => {
-                e.stopPropagation()
-                if (!editor) return
-                const next = !(showDetails ?? true)
-                editor.updateShapes([{
-                  id: shape.id,
-                  type: shape.type,
-                  props: { ...shape.props, showDetails: next }
-                }])
+                 e.stopPropagation()
               }}
-              style={{
-                background: '#fff',
-                color: '#000',
-                border: '2px solid #000',
-                padding: '2px 8px',
-                fontSize: 12,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                cursor: 'pointer'
-              }}
-              title={showDetails ? 'Hide details' : 'Show details'}
-            >
-              {showDetails ? '–' : '+'}
-            </button>
+            />
+            <div className="macos-title-container">
+              <div className="macos-lines" />
+              <span className="macos-title-text" style={{ fontSize: titleFontSize }}>
+                {title || '(untitled)'}
+              </span>
+              <div className="macos-lines" />
+            </div>
+            <div className="macos-btn-group">
+              <div 
+                className="macos-btn"
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => {
+                   e.stopPropagation()
+                }}
+              />
+              <div 
+                className="macos-btn"
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => {
+                  e.stopPropagation()
+                  if (!editor) return
+                  const next = !(showDetails ?? true)
+                  editor.updateShapes([{
+                    id: shape.id,
+                    type: shape.type,
+                    props: { ...shape.props, showDetails: next }
+                  }])
+                }}
+                title={showDetails ? 'Hide details' : 'Show details'}
+              />
+            </div>
           </div>
           <div style={{ height: imageH, overflow: 'hidden', ...imageStyle }}>
             {image ? (
