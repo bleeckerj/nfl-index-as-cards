@@ -66,6 +66,7 @@ export default function App() {
           image: card.image,
           summary: card.summary,
           content: card.content,
+          collection: card.collection,
           cardId: card.id,
           tags: card.tags || [],
           opacity: 1
@@ -97,6 +98,7 @@ export default function App() {
           image: card.image,
           summary: card.summary,
           content: card.content,
+          collection: card.collection,
           cardId: card.id,
           tags: card.tags || [],
           opacity

@@ -1,5 +1,12 @@
 import React from 'react'
 import { BaseBoxShapeUtil, HTMLContainer } from '@tldraw/editor'
+import stylesConfig from './data/styles.json'
+
+function getSectionStyle(section, collection) {
+  const defaults = stylesConfig.sections?.[section] || {}
+  const overrides = stylesConfig.collections?.[collection]?.[section] || {}
+  return { ...defaults, ...overrides }
+}
 
 export class CardShapeUtil extends BaseBoxShapeUtil {
   static type = 'card'
@@ -12,6 +19,7 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
       image: '',
       summary: '',
       content: '',
+      collection: '',
       cardId: '',
       opacity: 1
     }
@@ -26,23 +34,26 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
   }
 
   component(shape) {
-    const { w, h, title, image, summary, tags = [], opacity = 1 } = shape.props
+    const { w, h, title, image, summary, tags = [], opacity = 1, collection } = shape.props
     const titleH = 40
     const imageH = Math.max(140, Math.min(220, h * 0.45))
     const summaryH = Math.max(80, h - titleH - imageH - 40)
     const tagsH = 40
+    const cardStyle = getSectionStyle('card', collection)
+    const titleStyle = getSectionStyle('titleBar', collection)
+    const imageStyle = getSectionStyle('image', collection)
+    const tagsBarStyle = getSectionStyle('tagsBar', collection)
+    const tagStyle = getSectionStyle('tag', collection)
+    const summaryStyle = getSectionStyle('summary', collection)
 
     return (
       <HTMLContainer id={shape.id}>
         <div
           style={{
+            ...cardStyle,
             width: w,
             height: h,
-            background: '#0f1720',
-            borderRadius: 12,
             overflow: 'hidden',
-            boxShadow: '0 10px 32px rgba(0,0,0,0.35)',
-            color: '#f4f5f7',
             // fontFamily: 'serif',
             userSelect: 'none',
             opacity,
@@ -52,10 +63,9 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
         >
           <div
             style={{
+              ...titleStyle,
               height: titleH,
               padding: '8px 12px',
-              background: '#d1b35c',
-              color: '#111',
               fontWeight: 700,
               fontSize: 20,
               display: 'flex',
@@ -64,7 +74,7 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
           >
             {title || '(untitled)'}
           </div>
-          <div style={{ height: imageH, overflow: 'hidden', background: '#111' }}>
+          <div style={{ height: imageH, overflow: 'hidden', ...imageStyle }}>
             {image ? (
               <img
                 alt=""
@@ -79,9 +89,9 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
           </div>
           <div
             style={{
+              ...tagsBarStyle,
               minHeight: tagsH,
               padding: '8px 12px',
-              background: '#1c2230',
               display: 'flex',
               gap: 8,
               flexWrap: 'wrap',
@@ -93,10 +103,9 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
                 key={tag}
                 className='text-xl font-mono tags'
                 style={{
+                  ...tagStyle,
                   padding: '4px 10px',
                   borderRadius: 999,
-                  background: '#27272a',
-                  color: '#fff',
                   // fontSize: 12,
                   // fontFamily: 'monospace, Inter, sans-serif'
                 }}
@@ -107,12 +116,11 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
           </div>
           <div
             style={{
+              ...summaryStyle,
               height: summaryH,
               padding: '12px',
               fontSize: 16,
               lineHeight: 1.35,
-              background: '#222a35',
-              color: '#e8eaed',
               boxSizing: 'border-box'
             }}
           >
