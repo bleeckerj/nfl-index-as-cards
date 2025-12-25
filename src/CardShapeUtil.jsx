@@ -35,10 +35,16 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
 
   component(shape) {
     const { w, h, title, image, summary, tags = [], opacity = 1, collection } = shape.props
+    const [aspectRatio, setAspectRatio] = React.useState(null)
     const titleH = 40
-    const imageH = Math.max(140, Math.min(220, h * 0.45))
-    const summaryH = Math.max(80, h - titleH - imageH - 40)
     const tagsH = 40
+    const reserved = titleH + tagsH + 20
+    const fallbackImageH = Math.max(140, Math.min(220, h * 0.45))
+    const maxImageH = Math.max(100, h - reserved)
+    const imageH = aspectRatio
+      ? Math.max(80, Math.min(maxImageH, w * aspectRatio))
+      : fallbackImageH
+    const summaryH = Math.max(80, h - titleH - imageH - tagsH - 10)
     const cardStyle = getSectionStyle('card', collection)
     const titleStyle = getSectionStyle('titleBar', collection)
     const imageStyle = getSectionStyle('image', collection)
@@ -79,7 +85,24 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
               <img
                 alt=""
                 src={image}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
+                  display: 'block',
+                  background: imageStyle.background || '#111'
+                }}
+                onLoad={e => {
+                  const nw = e.target.naturalWidth || 0
+                  const nh = e.target.naturalHeight || 0
+                  if (nw > 0 && nh > 0) {
+                    const ar = nh / nw
+                    if (!aspectRatio || Math.abs(ar - aspectRatio) > 0.001) {
+                      setAspectRatio(ar)
+                    }
+                  }
+                }}
               />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: '#666' }}>
@@ -101,7 +124,7 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
             {tags.map(tag => (
               <span
                 key={tag}
-                className='text-xl font-mono tags'
+                className='text-sm font-mono tags'
                 style={{
                   ...tagStyle,
                   padding: '4px 10px',

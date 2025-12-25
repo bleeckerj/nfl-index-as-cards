@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Tldraw } from 'tldraw'
+import { Tldraw, DefaultToolbar, DefaultToolbarContent, ToolbarItem } from 'tldraw'
 import { createShapeId } from '@tldraw/editor'
 import 'tldraw/tldraw.css'
 import CardShapeUtil from './CardShapeUtil.jsx'
 import cardsData from './data/cards.json'
+import { TimedLineShapeUtil, TimedLineTool, setTimedLineConfig } from './TimedLineTool.js'
+import { TimedDrawShapeUtil, TimedDrawTool } from './TimedDrawTool.js'
 
 function randomPos(i) {
   return {
@@ -21,6 +23,8 @@ export default function App() {
   const [activeTags, setActiveTags] = useState(new Set())
   const [positions, setPositions] = useState({})
   const [selectedCard, setSelectedCard] = useState(null)
+  const [timedSeconds, setTimedSeconds] = useState(5)
+  const [timedFadeSeconds, setTimedFadeSeconds] = useState(2)
   const placed = useRef(false)
 
   useEffect(() => {
@@ -172,6 +176,111 @@ export default function App() {
     editorRef.current.zoomBy(-e.deltaY / 500, center)
   }
 
+  // timed line config -> tool module
+  useEffect(() => {
+    setTimedLineConfig({
+      lifespanMs: Math.max(500, timedSeconds * 1000),
+      fadeMs: Math.max(200, timedFadeSeconds * 1000)
+    })
+  }, [timedSeconds, timedFadeSeconds])
+
+  // fade + delete timed lines / draws (smooth via rAF)
+  useEffect(() => {
+    if (!appReady) return
+    let rafId = null
+
+    const tick = () => {
+      const editor = editorRef.current
+      if (!editor) {
+        rafId = requestAnimationFrame(tick)
+        return
+      }
+      const now = performance.now()
+      const shapes = editor
+        .getCurrentPageShapes()
+        .filter(s => s.type === 'timed-line' || s.type === 'timed-draw')
+      if (shapes.length) {
+        const updates = []
+        const toDelete = []
+        shapes.forEach(shape => {
+          const meta = shape.meta || {}
+          const createdAt = meta.createdAt || now
+          const lifespanMs = meta.lifespanMs || timedSeconds * 1000
+          const fadeMs = Math.min(meta.fadeMs || timedFadeSeconds * 1000, lifespanMs)
+          const baseOpacity = meta.baseOpacity ?? 1
+          const age = now - createdAt
+          if (age >= lifespanMs) {
+            toDelete.push(shape.id)
+            return
+          }
+          const fadeStart = lifespanMs - fadeMs
+          let nextOpacity = baseOpacity
+          if (age > fadeStart) {
+            const t = Math.max(0, 1 - (age - fadeStart) / fadeMs)
+            nextOpacity = baseOpacity * t
+          }
+          if (nextOpacity !== meta.fade) {
+            updates.push({
+              id: shape.id,
+              type: shape.type,
+              meta: { ...meta, fade: nextOpacity }
+            })
+          }
+        })
+        if (updates.length) editor.updateShapes(updates)
+        if (toDelete.length) editor.deleteShapes(toDelete)
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [appReady, timedSeconds, timedFadeSeconds])
+
+  const uiOverrides = useMemo(() => ({
+    tools(editor, tools) {
+      return {
+        ...tools,
+        'timed-line': {
+          id: 'timed-line',
+          label: 'Timed line',
+          icon: 'tool-line',
+          kbd: 'shift+l',
+          onSelect() {
+            editor.setCurrentTool('timed-line')
+          }
+        },
+        'timed-draw': {
+          id: 'timed-draw',
+          label: 'Timed draw',
+          icon: 'tool-pencil',
+          kbd: 'shift+d',
+          onSelect() {
+            editor.setCurrentTool('timed-draw')
+          }
+        }
+      }
+    }
+  }), [])
+
+  const CustomToolbarContent = () => (
+    <>
+      <DefaultToolbarContent />
+      <ToolbarItem tool="timed-line" />
+      <ToolbarItem tool="timed-draw" />
+    </>
+  )
+
+  const uiComponents = useMemo(() => ({
+    Toolbar: (props) => (
+      <DefaultToolbar {...props}>
+        <CustomToolbarContent />
+      </DefaultToolbar>
+    )
+  }), [])
+
   return (
     <div style={{ height: '100vh', display: 'flex' }}>
       <div style={{ width: 320, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box' }}>
@@ -225,13 +334,44 @@ export default function App() {
             </div>
           ) : <div>(select a card)</div>}
         </div>
+
+        <div style={{ marginTop: 18 }}>
+          <h4>Timed line</h4>
+          <div>
+            <label>
+              Lifespan (s){' '}
+              <input
+                type="number"
+                min={0.5}
+                step={0.5}
+                value={timedSeconds}
+                onChange={e => setTimedSeconds(parseFloat(e.target.value) || 0)}
+              />
+            </label>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label>
+              Fade duration (s){' '}
+              <input
+                type="number"
+                min={0.2}
+                step={0.2}
+                value={timedFadeSeconds}
+                onChange={e => setTimedFadeSeconds(parseFloat(e.target.value) || 0)}
+              />
+            </label>
+          </div>
+        </div>
       </div>
 
       <div style={{ flex: 1, position: 'relative' }} onWheel={onWheel}>
         <Tldraw
+          tools={[TimedLineTool, TimedDrawTool]}
           onMount={editor => { editorRef.current = editor; setAppReady(true) }}
           onChange={handleChange}
-          shapeUtils={[CardShapeUtil]}
+          shapeUtils={[CardShapeUtil, TimedLineShapeUtil, TimedDrawShapeUtil]}
+          overrides={uiOverrides}
+          components={uiComponents}
         />
       </div>
     </div>
