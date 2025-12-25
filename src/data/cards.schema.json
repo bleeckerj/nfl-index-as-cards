@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/cards.schema.json",
+  "title": "Cards",
+  "description": "Schema for cards.json entries used in the app",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "title", "summary", "collection", "tags", "image", "url"],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Unique identifier for the card"
+      },
+      "title": {
+        "type": "string",
+        "description": "Display title"
+      },
+      "summary": {
+        "type": "string",
+        "description": "Short summary shown on the card"
+      },
+      "collection": {
+        "type": "string",
+        "description": "Collection name/group for filtering"
+      },
+      "tags": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Tags for filtering/search"
+      },
+      "image": {
+        "type": "string",
+        "format": "uri",
+        "description": "Image URL displayed on the card"
+      },
+      "url": {
+        "type": "string",
+        "format": "uri",
+        "description": "Link to open the detail page for this card"
+      }
+    }
+  }
+}

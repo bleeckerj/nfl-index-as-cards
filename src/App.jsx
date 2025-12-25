@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Tldraw } from 'tldraw'
+import { createPortal } from 'react-dom'
+import { Tldraw, DefaultToolbar, DefaultToolbarContent, ToolbarItem } from 'tldraw'
 import { createShapeId } from '@tldraw/editor'
 import 'tldraw/tldraw.css'
 import CardShapeUtil from './CardShapeUtil.jsx'
 import cardsData from './data/cards.json'
+import { TimedLineShapeUtil, TimedLineTool, setTimedLineConfig } from './TimedLineTool.js'
+import { TimedDrawShapeUtil, TimedDrawTool } from './TimedDrawTool.js'
+import { TimedHighlightShapeUtil, TimedHighlightTool } from './TimedHighlightTool.js'
 
 function randomPos(i) {
   return {
@@ -21,6 +25,14 @@ export default function App() {
   const [activeTags, setActiveTags] = useState(new Set())
   const [positions, setPositions] = useState({})
   const [selectedCard, setSelectedCard] = useState(null)
+  const [timedSeconds, setTimedSeconds] = useState(5)
+  const [timedFadeSeconds, setTimedFadeSeconds] = useState(2)
+  const [showTimedControls, setShowTimedControls] = useState(false)
+  const [showControlPanel, setShowControlPanel] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const saved = window.localStorage.getItem('panel:visible')
+    return saved ? saved === 'true' : false
+  })
   const placed = useRef(false)
 
   useEffect(() => {
@@ -28,7 +40,34 @@ export default function App() {
     const ts = Array.from(new Set(cardsData.flatMap(c => c.tags)))
     setCollections(cols)
     setTags(ts)
-    setActiveCollections(new Set(cols))
+    const savedCols = (() => {
+      if (typeof window === 'undefined') return null
+      try {
+        const raw = window.localStorage.getItem('panel:collections')
+        return raw ? new Set(JSON.parse(raw).filter(x => cols.includes(x))) : null
+      } catch {
+        return null
+      }
+    })()
+    const savedTags = (() => {
+      if (typeof window === 'undefined') return null
+      try {
+        const raw = window.localStorage.getItem('panel:tags')
+        return raw ? new Set(JSON.parse(raw).filter(x => ts.includes(x))) : null
+      } catch {
+        return null
+      }
+    })()
+    setActiveCollections(savedCols ?? new Set(cols))
+    setActiveTags(savedTags ?? new Set())
+    if (typeof window !== 'undefined') {
+      const savedLife = parseFloat(window.localStorage.getItem('panel:lifespan') || '')
+      const savedFade = parseFloat(window.localStorage.getItem('panel:fade') || '')
+      if (!Number.isNaN(savedLife)) setTimedSeconds(Math.min(10, Math.max(5, savedLife)))
+      if (!Number.isNaN(savedFade)) setTimedFadeSeconds(Math.min(5, Math.max(0.5, savedFade)))
+      const savedVisible = window.localStorage.getItem('panel:visible')
+      if (savedVisible !== null) setShowControlPanel(savedVisible === 'true')
+    }
     const pos = {}
     cardsData.forEach((c, i) => { pos[c.id] = randomPos(i) })
     setPositions(pos)
@@ -65,11 +104,12 @@ export default function App() {
           title: card.title,
           image: card.image,
           summary: card.summary,
-          content: card.content,
+          url: card.url || '',
           collection: card.collection,
           cardId: card.id,
           tags: card.tags || [],
-          opacity: 1
+          opacity: 1,
+          showDetails: true
         },
         meta: { cardId: card.id },
         index: `a${idx}`
@@ -85,11 +125,11 @@ export default function App() {
     const editor = editorRef.current
     const current = editor.getCurrentPageShapes().filter(s => s.type === 'card')
     const cardById = new Map(cardsData.map(c => [c.id, c]))
-    const updates = current.map(shape => {
-      const card = cardById.get(shape.props.cardId)
-      const opacity = visibleIds.has(shape.props.cardId) ? 1 : 0
-      if (!card) return null
-      return {
+      const updates = current.map(shape => {
+        const card = cardById.get(shape.props.cardId)
+        const opacity = visibleIds.has(shape.props.cardId) ? 1 : 0
+        if (!card) return null
+        return {
         id: shape.id,
         type: 'card',
         props: {
@@ -97,11 +137,12 @@ export default function App() {
           title: card.title,
           image: card.image,
           summary: card.summary,
-          content: card.content,
+          url: card.url || '',
           collection: card.collection,
           cardId: card.id,
           tags: card.tags || [],
-          opacity
+          opacity,
+          showDetails: shape.props.showDetails ?? true
         }
       }
     }).filter(Boolean)
@@ -113,6 +154,24 @@ export default function App() {
     if (checked) next.add(c)
     else next.delete(c)
     setActiveCollections(next)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('panel:collections', JSON.stringify(Array.from(next)))
+    }
+  }
+
+  function toggleDetails(cardId) {
+    if (!editorRef.current) return
+    const shape = editorRef.current
+      .getCurrentPageShapes()
+      .find(s => s.type === 'card' && s.props.cardId === cardId)
+    if (shape) {
+      const next = !(shape.props.showDetails ?? true)
+      editorRef.current.updateShapes([{
+        id: shape.id,
+        type: shape.type,
+        props: { ...shape.props, showDetails: next }
+      }])
+    }
   }
 
   function toggleTag(t, checked) {
@@ -120,6 +179,9 @@ export default function App() {
     if (checked) next.add(t)
     else next.delete(t)
     setActiveTags(next)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('panel:tags', JSON.stringify(Array.from(next)))
+    }
   }
 
   function shuffle() {
@@ -166,15 +228,265 @@ export default function App() {
   // pinch zoom on trackpad
   function onWheel(e) {
     if (!editorRef.current || !e.ctrlKey) return
-    e.preventDefault()
-    const rect = e.currentTarget.getBoundingClientRect()
-    const center = [e.clientX - rect.left, e.clientY - rect.top]
-    editorRef.current.zoomBy(-e.deltaY / 500, center)
+    // best effort prevent the browser zoom; React's wheel may be passive, so this may be ignored
+    e.preventDefault?.()
+    const editor = editorRef.current
+    if (typeof editor.zoomIn === 'function' && typeof editor.zoomOut === 'function') {
+      if (e.deltaY < 0) editor.zoomIn()
+      else editor.zoomOut()
+    }
   }
+
+  // timed line config -> tool module
+  useEffect(() => {
+    setTimedLineConfig({
+      lifespanMs: Math.max(500, timedSeconds * 1000),
+      fadeMs: Math.max(200, timedFadeSeconds * 1000)
+    })
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('panel:lifespan', String(timedSeconds))
+      window.localStorage.setItem('panel:fade', String(timedFadeSeconds))
+    }
+  }, [timedSeconds, timedFadeSeconds])
+
+  // fade + delete timed lines / draws (smooth via rAF)
+  useEffect(() => {
+    if (!appReady) return
+    let rafId = null
+
+    const tick = () => {
+      const editor = editorRef.current
+      if (!editor) {
+        rafId = requestAnimationFrame(tick)
+        return
+      }
+      const now = Date.now()
+      const shapes = editor
+        .getCurrentPageShapes()
+        .filter(s => s.type === 'timed-line' || s.type === 'timed-draw' || s.type === 'timed-highlight')
+      if (shapes.length) {
+        const updates = []
+        const toDelete = []
+        shapes.forEach(shape => {
+          const meta = shape.meta || {}
+          const createdAt = meta.createdAt || now
+          const lifespanMs = meta.lifespanMs || timedSeconds * 1000
+          const fadeMs = Math.min(meta.fadeMs || timedFadeSeconds * 1000, lifespanMs)
+          const baseOpacity = meta.baseOpacity ?? 1
+          const age = now - createdAt
+          if (age >= lifespanMs) {
+            toDelete.push(shape.id)
+            return
+          }
+          const fadeStart = lifespanMs - fadeMs
+          let nextOpacity = baseOpacity
+          if (age > fadeStart) {
+            const t = Math.max(0, 1 - (age - fadeStart) / fadeMs)
+            nextOpacity = baseOpacity * t
+          }
+          if (nextOpacity !== meta.fade) {
+            updates.push({
+              id: shape.id,
+              type: shape.type,
+              meta: { ...meta, fade: nextOpacity }
+            })
+          }
+        })
+        if (updates.length) editor.updateShapes(updates)
+        if (toDelete.length) editor.deleteShapes(toDelete)
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [appReady, timedSeconds, timedFadeSeconds])
+
+  const uiOverrides = useMemo(() => ({
+    tools(editor, tools) {
+      return {
+        ...tools,
+        'timed-line': {
+          id: 'timed-line',
+          label: 'Timed line',
+          icon: 'tool-line',
+          kbd: 'shift+l',
+          onSelect() {
+            editor.setCurrentTool('timed-line')
+          }
+        },
+        'timed-draw': {
+          id: 'timed-draw',
+          label: 'Timed draw',
+          icon: 'tool-pencil',
+          kbd: 'shift+d',
+          onSelect() {
+            editor.setCurrentTool('timed-draw')
+          }
+        },
+        'timed-highlight': {
+          id: 'timed-highlight',
+          label: 'Timed highlight',
+          icon: 'tool-highlight',
+          kbd: 'shift+h',
+          onSelect() {
+            editor.setCurrentTool('timed-highlight')
+          }
+        }
+      }
+    }
+  }), [])
+
+  const CustomToolbarContent = () => (
+    <>
+      <DefaultToolbarContent />
+      <ToolbarItem tool="timed-line" />
+      <ToolbarItem tool="timed-draw" />
+      <ToolbarItem tool="timed-highlight" />
+    </>
+  )
+
+  const ThemeCss = () => (
+    <style>{`
+      .tl-container {
+        --tl-selection-color: #d6d6d6;
+        --tl-user-handles-fill: #d6d6d6;
+        --tl-user-handles-stroke: #d6d6d6;
+      }
+    `}</style>
+  )
+
+  const ControlsOverlay = () => {
+    const hideTimer = React.useRef(null)
+
+    const cancelHide = () => {
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current)
+        hideTimer.current = null
+      }
+    }
+
+    const scheduleHide = () => {
+      cancelHide()
+      hideTimer.current = setTimeout(() => setShowTimedControls(false), 1200)
+    }
+
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          right: 16,
+          bottom: 80,
+          zIndex: 20000,
+          pointerEvents: 'auto'
+        }}
+        onPointerEnter={cancelHide}
+        onPointerDown={e => { cancelHide(); e.stopPropagation() }}
+        onPointerMove={e => e.stopPropagation()}
+        onPointerUp={e => { e.stopPropagation() }}
+        onPointerLeave={scheduleHide}
+      >
+        {!showTimedControls && (
+          <button
+            onClick={() => { cancelHide(); setShowTimedControls(true) }}
+            style={{
+              background: '#efefef',
+              color: '#111',
+              border: '0.4px solid #000',
+              borderRadius: 6,
+              padding: '6px 10px',
+              fontSize: 12,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.25)'
+            }}
+          >
+            🕖
+          </button>
+        )}
+        {showTimedControls && (
+          <div
+            style={{
+              position: 'relative',
+              minWidth: 240,
+              background: '#f9fafb',
+              border: '1px solid #dcdcdc',
+              borderRadius: 8,
+              boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+              padding: 12,
+              fontSize: 12,
+              color: '#111'
+            }}
+            onPointerEnter={cancelHide}
+            onPointerLeave={scheduleHide}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 700 }}>Adj</div>
+              <button
+                onClick={() => { cancelHide(); setShowTimedControls(false) }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  padding: 4
+                }}
+                aria-label="Close timed tools"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 8 }}>
+              <span style={{ width: 70 }}>Lifespan</span>
+              <input
+                type="range"
+                min={5}
+                max={10}
+                step={0.5}
+                value={timedSeconds}
+                onChange={e => setTimedSeconds(parseFloat(e.target.value) || 5)}
+                style={{ flex: 1 }}
+                onPointerDown={e => e.stopPropagation()}
+                onPointerMove={e => e.stopPropagation()}
+                onPointerUp={e => { e.stopPropagation() }}
+              />
+              <span style={{ width: 44, textAlign: 'right' }}>{timedSeconds.toFixed(1)}s</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 70 }}>Fade</span>
+              <input
+                type="range"
+                min={0.5}
+                max={5}
+                step={0.1}
+                value={timedFadeSeconds}
+                onChange={e => setTimedFadeSeconds(parseFloat(e.target.value) || 0.5)}
+                style={{ flex: 1 }}
+                onPointerDown={e => e.stopPropagation()}
+                onPointerMove={e => e.stopPropagation()}
+                onPointerUp={e => { e.stopPropagation() }}
+              />
+              <span style={{ width: 44, textAlign: 'right' }}>{timedFadeSeconds.toFixed(1)}s</span>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const uiComponents = useMemo(() => ({
+    Toolbar: (props) => (
+      <DefaultToolbar {...props}>
+        <CustomToolbarContent />
+      </DefaultToolbar>
+    ),
+    InFrontOfTheCanvas: ThemeCss
+  }), [])
 
   return (
     <div style={{ height: '100vh', display: 'flex' }}>
-      <div style={{ width: 320, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box' }}>
+      <div style={{ width: 320, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box', position: 'relative' }}>
         <h3>Filters</h3>
         <div>
           <strong>Collections</strong>
@@ -220,7 +532,16 @@ export default function App() {
               <div style={{ fontSize: 12, color: '#666' }}>
                 <div>Collection: {selectedCard.collection}</div>
                 <div>Tags: {selectedCard.tags.join(', ')}</div>
-                <div style={{ marginTop: 8 }}>{selectedCard.content}</div>
+                {selectedCard.url && (
+                  <div style={{ marginTop: 8 }}>
+                    <a href={selectedCard.url} target="_blank" rel="noreferrer">Open detail</a>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <button onClick={() => toggleDetails(selectedCard.id)}>
+                  Toggle details
+                </button>
               </div>
             </div>
           ) : <div>(select a card)</div>}
@@ -229,10 +550,14 @@ export default function App() {
 
       <div style={{ flex: 1, position: 'relative' }} onWheel={onWheel}>
         <Tldraw
+          tools={[TimedLineTool, TimedDrawTool, TimedHighlightTool]}
           onMount={editor => { editorRef.current = editor; setAppReady(true) }}
           onChange={handleChange}
-          shapeUtils={[CardShapeUtil]}
+          shapeUtils={[CardShapeUtil, TimedLineShapeUtil, TimedDrawShapeUtil, TimedHighlightShapeUtil]}
+          overrides={uiOverrides}
+          components={uiComponents}
         />
+        {createPortal(<ControlsOverlay />, document.body)}
       </div>
     </div>
   )
