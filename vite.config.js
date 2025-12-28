@@ -7,7 +7,15 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({
+    babel: {
+      plugins: [
+        ["@babel/plugin-proposal-decorators", { "version": "2023-05" }],
+        ["@babel/plugin-proposal-class-properties"],
+        ["@babel/plugin-transform-class-static-block"]
+      ]
+    }
+  })],
   resolve: {
     alias: {
       'tldraw/tldraw.css': path.resolve(__dirname, '../tldraw/packages/tldraw/tldraw.css'),

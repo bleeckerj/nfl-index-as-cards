@@ -71,6 +71,8 @@ export default function App() {
     const saved = window.localStorage.getItem('panel:visible')
     return saved ? saved === 'true' : false
   })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
   const placed = useRef(false)
   const positionsCache = useRef(calculateInitialLayout())
 
@@ -148,6 +150,10 @@ export default function App() {
     [activeCollections, activeTags, activeYears]
   )
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeCollections, activeTags, activeYears])
+
   // visibility + prop sync (add/remove shapes instead of opacity)
   useEffect(() => {
     if (!appReady || !editorRef.current) return
@@ -157,22 +163,26 @@ export default function App() {
     const currentShapes = editor.getCurrentPageShapes().filter(s => s.type === 'card')
     const currentShapeMap = new Map(currentShapes.map(s => [s.props.cardId, s]))
 
-    // 2. Calculate new layout for ALL visible IDs
-    const visibleIdList = [...visibleIds].sort((a, b) => {
+    // 2. Calculate new layout for PAGED visible IDs
+    const allVisibleList = [...visibleIds].sort((a, b) => {
       const idxA = cardsData.findIndex(c => c.id === a)
       const idxB = cardsData.findIndex(c => c.id === b)
       return idxA - idxB
     })
 
+    const start = (currentPage - 1) * pageSize
+    const pagedVisibleList = allVisibleList.slice(start, start + pageSize)
+    const pagedVisibleSet = new Set(pagedVisibleList)
+
     const GAP = 20
     const CARD_WIDTH = 360
-    const COLUMNS = Math.max(3, Math.min(18, Math.ceil(Math.sqrt(visibleIdList.length))))
+    const COLUMNS = Math.max(3, Math.min(18, Math.ceil(Math.sqrt(pagedVisibleList.length))))
     const colHeights = new Array(COLUMNS).fill(0)
     const startX = 60
     const startY = 60
     const newPositions = {}
 
-    visibleIdList.forEach(id => {
+    pagedVisibleList.forEach(id => {
       let minCol = 0
       for (let col = 1; col < COLUMNS; col++) {
         if (colHeights[col] < colHeights[minCol]) {
@@ -199,9 +209,9 @@ export default function App() {
 
     // 3. Determine what to add/remove/update
     const currentCardIds = new Set(currentShapes.map(s => s.props.cardId))
-    const toDelete = currentShapes.filter(s => !visibleIds.has(s.props.cardId)).map(s => s.id)
-    const toAdd = visibleIdList.filter(id => !currentCardIds.has(id))
-    const toUpdate = currentShapes.filter(s => visibleIds.has(s.props.cardId))
+    const toDelete = currentShapes.filter(s => !pagedVisibleSet.has(s.props.cardId)).map(s => s.id)
+    const toAdd = pagedVisibleList.filter(id => !currentCardIds.has(id))
+    const toUpdate = currentShapes.filter(s => pagedVisibleSet.has(s.props.cardId))
 
     editor.run(() => {
       // Delete hidden shapes
@@ -266,9 +276,24 @@ export default function App() {
         editor.updateShapes(updates)
       }
       
-      editor.zoomToFit({ animation: { duration: 400 } })
+      if (selectedCard) {
+        const bounds = editor.getCurrentPageBounds()
+        if (bounds) {
+          const { w: vw, h: vh } = editor.getViewportScreenBounds()
+          const padding = 60
+          const zoom = Math.min(
+            (vw - padding * 2) / bounds.w,
+            (vh - padding * 2) / bounds.h
+          )
+          const targetX = (padding / zoom) - bounds.minX
+          const targetY = (vh / 2) / zoom - bounds.midY
+          editor.setCamera({ x: targetX, y: targetY, z: zoom }, { animation: { duration: 400 } })
+        }
+      } else {
+        editor.zoomToFit({ animation: { duration: 400 } })
+      }
     })
-  }, [appReady, visibleIds])
+  }, [appReady, visibleIds, currentPage, pageSize, selectedCard])
 
   function toggleCollection(c, checked) {
     const next = new Set(activeCollections)
@@ -787,6 +812,60 @@ export default function App() {
   return (
     <div style={{ height: '100vh', minHeight: '800px', display: 'flex' }}>
       <div style={{ width: 240, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box', position: 'relative', overflowY: 'auto' }}>
+        <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #eee' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontFamily: '"3270"', fontWeight: 'bold', fontSize: '18px' }}>Page</span>
+            <span style={{ fontFamily: '"3270"', fontSize: '14px' }}>
+              {currentPage} / {Math.ceil(visibleIds.size / pageSize) || 1}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{
+                flex: 1,
+                fontFamily: '"3270"',
+                fontSize: 14,
+                padding: '4px 8px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                opacity: currentPage === 1 ? 0.5 : 1
+              }}
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(Math.ceil(visibleIds.size / pageSize), p + 1))}
+              disabled={currentPage >= Math.ceil(visibleIds.size / pageSize)}
+              style={{
+                flex: 1,
+                fontFamily: '"3270"',
+                fontSize: 14,
+                padding: '4px 8px',
+                cursor: currentPage >= Math.ceil(visibleIds.size / pageSize) ? 'not-allowed' : 'pointer',
+                opacity: currentPage >= Math.ceil(visibleIds.size / pageSize) ? 0.5 : 1
+              }}
+            >
+              Next
+            </button>
+          </div>
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontFamily: '"3270"', fontSize: '12px' }}>Per page:</span>
+            <select 
+              value={pageSize} 
+              onChange={e => {
+                setPageSize(Number(e.target.value))
+                setCurrentPage(1)
+              }}
+              style={{ fontFamily: '"3270"', fontSize: '12px' }}
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+            </select>
+          </div>
+        </div>
         {/* <h3>Filters</h3> */}
         <div>
           <span style={{ fontFamily: '"3270"', fontWeight: 'bold', fontSize: '18px' }}>Collections</span>
