@@ -1,7 +1,13 @@
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: {
       'tldraw/tldraw.css': path.resolve(__dirname, '../tldraw/packages/tldraw/tldraw.css'),
@@ -29,19 +35,6 @@ export default defineConfig({
     // Bump the warning threshold; the bundle is large because tldraw + Radix ship many UI components
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor'
-            }
-            return 'vendor'
-          }
-          if (id.includes('/tldraw/packages/')) {
-            return 'tldraw-lib'
-          }
-        }
-      },
       // Silence Radix "use client" directives, which are safe to ignore when bundling
       onwarn(warning, warn) {
         if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && warning.message.includes('"use client"')) return

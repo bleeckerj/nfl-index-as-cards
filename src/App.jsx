@@ -60,11 +60,12 @@ export default function App() {
   const [activeYears, setActiveYears] = useState(new Set())
   const [positions, setPositions] = useState({})
   const [selectedCard, setSelectedCard] = useState(null)
+  const [viewingUrl, setViewingUrl] = useState(null)
   const [timedSeconds, setTimedSeconds] = useState(5)
   const [timedFadeSeconds, setTimedFadeSeconds] = useState(2)
   const [showTimedControls, setShowTimedControls] = useState(false)
-  const [showStylePanel, setShowStylePanel] = useState(true)
-  const [showInterface, setShowInterface] = useState(true)
+  const [showStylePanel, setShowStylePanel] = useState(false)
+  const [showInterface, setShowInterface] = useState(false)
   const [showControlPanel, setShowControlPanel] = useState(() => {
     if (typeof window === 'undefined') return false
     const saved = window.localStorage.getItem('panel:visible')
@@ -430,12 +431,7 @@ export default function App() {
         const [prev, next] = instanceChange
         if (prev.selectedShapeIds !== next.selectedShapeIds) {
           const selectedIds = next.selectedShapeIds
-          
-          // If shift is not held, clear the side pane
-          if (!editor.inputs.shiftKey) {
-            setSelectedCard(null)
-            return
-          }
+
 
           // Find the newly selected shape
           const addedId = selectedIds.find(id => !prev.selectedShapeIds.includes(id))
@@ -446,9 +442,11 @@ export default function App() {
               const cardId = shape.props.cardId
               const card = cardsData.find(c => c.id === cardId)
               setSelectedCard(card || null)
+              setViewingUrl(null)
             }
           } else if (selectedIds.length === 0) {
             setSelectedCard(null)
+            setViewingUrl(null)
           }
         }
       }
@@ -877,35 +875,65 @@ export default function App() {
       </div>
 
       {selectedCard && (
-        <div style={{ width: 600, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box', position: 'relative', overflowY: 'auto', backgroundColor: '#f9f9f9' }}>
-          <div style={{ fontFamily: '"ChicagoKare"', fontWeight: 'bold', lineHeight: 1, fontSize: '18px', marginBottom: 8 }}>{selectedCard.title}</div>
-          {selectedCard.image && (
-            <div style={{ marginBottom: 12 }}>
-              <img 
-                src={selectedCard.image} 
-                alt={selectedCard.title} 
-                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }} 
+        <div style={{ width: 600, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box', position: 'relative', overflowY: 'auto', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column' }}>
+          {viewingUrl ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <button 
+                onClick={() => setViewingUrl(null)} 
+                style={{ 
+                  marginBottom: 8, 
+                  fontFamily: '"3270"', 
+                  fontSize: '14px', 
+                  padding: '4px 8px', 
+                  cursor: 'pointer',
+                  alignSelf: 'flex-start'
+                }}
+              >
+                ← Back to details
+              </button>
+              <iframe 
+                src={viewingUrl} 
+                style={{ flex: 1, border: '1px solid #ddd', background: 'white' }} 
+                title="Content Viewer"
               />
             </div>
-          )}
-          <p style={{ fontFamily: '"3270"', fontSize: '12px', color: '#888', marginBottom: 12 }}>
-            {selectedCard.date ? (new Date(selectedCard.date)).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
-          </p>
-          <p style={{ fontFamily: '"AppleGaramond"', fontSize: '16px', lineHeight: 1.2, marginBottom: 12, color: '#000' }}>
-            {selectedCard.summary || ''}
-          </p>
-          <div style={{ fontSize: 12, color: '#666' }}>
-            COLLECTION: <span style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>{selectedCard.collection}</span><br />
-            TAGS: {selectedCard.tags.map(tag => (
-              <span key={tag} style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>
-                {tag}
-              </span>
-            ))}
-          </div>
-          {selectedCard.url && (
-            <div style={{ fontFamily: '"3270"', marginTop: 12, fontSize: '12px', fontWeight: 'bold', backgroundColor: '#1a1a1a', color: 'white', padding: '4px 6px', borderRadius: '6px', display: 'block', width: 'fit-content' }}>
-              <a href={selectedCard.url} target="_blank" rel="noreferrer" style={{ color: 'white', textDecoration: 'none' }}>Open detail</a>
-            </div>
+          ) : (
+            <>
+              <div style={{ fontFamily: '"ChicagoKare"', fontWeight: 'bold', lineHeight: 1, fontSize: '18px', marginBottom: 8 }}>{selectedCard.title}</div>
+              {selectedCard.image && (
+                <div style={{ marginBottom: 12 }}>
+                  <img 
+                    src={selectedCard.image} 
+                    alt={selectedCard.title} 
+                    style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }} 
+                  />
+                </div>
+              )}
+              <p style={{ fontFamily: '"3270"', fontSize: '12px', color: '#888', marginBottom: 12 }}>
+                {selectedCard.date ? (new Date(selectedCard.date)).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+              </p>
+              <p style={{ fontFamily: '"AppleGaramond"', fontSize: '16px', lineHeight: 1.2, marginBottom: 12, color: '#000' }}>
+                {selectedCard.summary || ''}
+              </p>
+              <div style={{ fontSize: 12, color: '#666' }}>
+                COLLECTION: <span style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>{selectedCard.collection}</span><br />
+                TAGS: {selectedCard.tags.map(tag => (
+                  <span key={tag} style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              {selectedCard.url && (
+                <div style={{ fontFamily: '"3270"', marginTop: 12, fontSize: '12px', fontWeight: 'bold', backgroundColor: '#1a1a1a', color: 'white', padding: '4px 6px', borderRadius: '6px', display: 'block', width: 'fit-content' }}>
+                  <button 
+                    onClick={() => setViewingUrl(selectedCard.url)}
+                    style={{ color: 'white', textDecoration: 'none', background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                  >
+                    Open detail
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
