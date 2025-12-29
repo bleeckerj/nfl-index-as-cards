@@ -72,7 +72,10 @@ export default function App() {
     return saved ? saved === 'true' : false
   })
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
+  const [pageSize, setPageSize] = useState(30)
+  const [isLeftPaneCollapsed, setIsLeftPaneCollapsed] = useState(false)
+  const [detailPaneWidth, setDetailPaneWidth] = useState(600)
+  const isResizing = useRef(false)
   const placed = useRef(false)
   const positionsCache = useRef(calculateInitialLayout())
 
@@ -791,9 +794,75 @@ export default function App() {
     return overrides
   }, [showStylePanel, showInterface])
 
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing.current) return
+      const leftPaneWidth = isLeftPaneCollapsed ? 40 : 240
+      const newWidth = e.clientX - leftPaneWidth
+      // Clamp width between 300px and (window width - left pane - 100px)
+      const maxWidth = window.innerWidth - leftPaneWidth - 100
+      setDetailPaneWidth(Math.max(300, Math.min(newWidth, maxWidth)))
+    }
+
+    const handleMouseUp = () => {
+      isResizing.current = false
+      document.body.style.cursor = 'default'
+      document.body.style.userSelect = 'auto'
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isLeftPaneCollapsed])
+
   return (
     <div style={{ height: '100vh', minHeight: '800px', display: 'flex' }}>
-      <div style={{ width: 240, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box', position: 'relative', overflowY: 'auto' }}>
+      <div style={{ 
+        width: isLeftPaneCollapsed ? 40 : 240, 
+        borderRight: '1px solid #ddd', 
+        padding: isLeftPaneCollapsed ? 4 : 12, 
+        boxSizing: 'border-box', 
+        position: 'relative', 
+        overflowY: isLeftPaneCollapsed ? 'hidden' : 'auto',
+        transition: 'width 0.2s ease-in-out, padding 0.2s ease-in-out'
+      }}>
+        <button
+          onClick={() => setIsLeftPaneCollapsed(!isLeftPaneCollapsed)}
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: isLeftPaneCollapsed ? '50%' : 8,
+            transform: isLeftPaneCollapsed ? 'translateX(50%)' : 'none',
+            zIndex: 10,
+            background: 'white',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            width: 24,
+            height: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            lineHeight: 1
+          }}
+          title={isLeftPaneCollapsed ? "Expand" : "Collapse"}
+        >
+          {isLeftPaneCollapsed ? '»' : '«'}
+        </button>
+        <div style={{ 
+          opacity: isLeftPaneCollapsed ? 0 : 1, 
+          transition: 'opacity 0.2s ease-in-out',
+          pointerEvents: isLeftPaneCollapsed ? 'none' : 'auto',
+          visibility: isLeftPaneCollapsed ? 'hidden' : 'visible',
+          marginTop: 24
+        }}>
         <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #eee' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontFamily: '"3270"', fontWeight: 'bold', fontSize: '18px' }}>Page</span>
@@ -841,10 +910,10 @@ export default function App() {
               }}
               style={{ fontFamily: '"3270"', fontSize: '12px' }}
             >
-              <option value={25}>25</option>
+              <option value={30}>30</option>
               <option value={50}>50</option>
+              <option value={70}>70</option>
               <option value={100}>100</option>
-              <option value={200}>200</option>
             </select>
           </div>
         </div>
@@ -933,86 +1002,114 @@ export default function App() {
         </div> 
         */}
         {/* Selected card details removed */}
+        </div>
       </div>
 
       {selectedCard && (
-        <div style={{ width: 600, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box', position: 'relative', overflowY: 'auto', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column' }}>
-          {viewingUrl ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <button 
-                onClick={() => setViewingUrl(null)} 
-                style={{ 
-                  marginBottom: 8, 
-                  fontFamily: '"3270"', 
-                  fontSize: '14px', 
-                  padding: '4px 8px', 
-                  cursor: 'pointer',
-                  alignSelf: 'flex-start'
-                }}
-              >
-                ← Back to details
-              </button>
-              <iframe 
-                src={viewingUrl} 
-                style={{ flex: 1, border: '1px solid #ddd', background: 'white' }} 
-                title="Content Viewer"
-              />
-            </div>
-          ) : (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                <div style={{ fontFamily: '"ChicagoKare"', fontWeight: 'bold', lineHeight: 1, fontSize: '18px', flex: 1, marginRight: 8 }}>{selectedCard.title}</div>
+        <>
+          <div style={{ width: detailPaneWidth, borderRight: '1px solid #ddd', padding: 12, boxSizing: 'border-box', position: 'relative', overflowY: 'auto', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column' }}>
+            {viewingUrl ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <button 
-                  onClick={() => { setSelectedCard(null); setViewingUrl(null); }}
+                  onClick={() => setViewingUrl(null)} 
                   style={{ 
+                    marginBottom: 8, 
                     fontFamily: '"3270"', 
-                    fontSize: '12px', 
-                    padding: '2px 6px', 
+                    fontSize: '14px', 
+                    padding: '4px 8px', 
                     cursor: 'pointer',
-                    border: '1px solid #ccc',
-                    background: 'white',
-                    flexShrink: 0
+                    alignSelf: 'flex-start'
                   }}
                 >
-                  CLOSE
+                  ← Back to details
                 </button>
+                <iframe 
+                  src={viewingUrl} 
+                  style={{ flex: 1, border: '1px solid #ddd', background: 'white' }} 
+                  title="Content Viewer"
+                />
               </div>
-              {selectedCard.image && (
-                <div style={{ marginBottom: 12 }}>
-                  <img 
-                    src={selectedCard.image} 
-                    alt={selectedCard.title} 
-                    style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }} 
-                  />
-                </div>
-              )}
-              <p style={{ fontFamily: '"3270"', fontSize: '12px', color: '#888', marginBottom: 12 }}>
-                {selectedCard.date ? (new Date(selectedCard.date)).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
-              </p>
-              <p style={{ fontFamily: '"AppleGaramond"', fontSize: '16px', lineHeight: 1.2, marginBottom: 12, color: '#000' }}>
-                {selectedCard.summary || ''}
-              </p>
-              <div style={{ fontSize: 12, color: '#666' }}>
-                COLLECTION: <span style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>{selectedCard.collection}</span><br />
-                TAGS: {selectedCard.tags.map(tag => (
-                  <span key={tag} style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              {selectedCard.url && (
-                <div style={{ fontFamily: '"3270"', marginTop: 12, fontSize: '12px', fontWeight: 'bold', backgroundColor: '#1a1a1a', color: 'white', padding: '4px 6px', borderRadius: '6px', display: 'block', width: 'fit-content' }}>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ fontFamily: '"ChicagoKare"', fontWeight: 'bold', lineHeight: 1, fontSize: '18px', flex: 1, marginRight: 8 }}>{selectedCard.title}</div>
                   <button 
-                    onClick={() => setViewingUrl(selectedCard.url)}
-                    style={{ color: 'white', textDecoration: 'none', background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                    onClick={() => { setSelectedCard(null); setViewingUrl(null); }}
+                    style={{ 
+                      fontFamily: '"3270"', 
+                      fontSize: '12px', 
+                      padding: '2px 6px', 
+                      cursor: 'pointer',
+                      border: '1px solid #ccc',
+                      background: 'white',
+                      flexShrink: 0
+                    }}
                   >
-                    Open detail
+                    CLOSE
                   </button>
                 </div>
-              )}
-            </>
-          )}
-        </div>
+                {selectedCard.image && (
+                  <div style={{ marginBottom: 12 }}>
+                    <img 
+                      src={selectedCard.image} 
+                      alt={selectedCard.title} 
+                      style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }} 
+                    />
+                  </div>
+                )}
+                <p style={{ fontFamily: '"3270"', fontSize: '12px', color: '#888', marginBottom: 12 }}>
+                  {selectedCard.date ? (new Date(selectedCard.date)).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+                </p>
+                <p style={{ fontFamily: '"AppleGaramond"', fontSize: '16px', lineHeight: 1.2, marginBottom: 12, color: '#000' }}>
+                  {selectedCard.summary || ''}
+                </p>
+                <div style={{ fontSize: 12, color: '#666' }}>
+                  COLLECTION: <span style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>{selectedCard.collection}</span><br />
+                  TAGS: {selectedCard.tags.map(tag => (
+                    <span key={tag} style={{ backgroundColor: "black", color: "white", margin: '2px', padding: '2px 4px', borderRadius: '4px', fontFamily: '"3270"', lineHeight: 1, display: 'inline-block' }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                {selectedCard.url && (
+                  <div style={{ fontFamily: '"3270"', marginTop: 12, fontSize: '12px', fontWeight: 'bold', backgroundColor: '#1a1a1a', color: 'white', padding: '4px 6px', borderRadius: '6px', display: 'block', width: 'fit-content' }}>
+                    <button 
+                      onClick={() => setViewingUrl(selectedCard.url)}
+                      style={{ color: 'white', textDecoration: 'none', background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                    >
+                      Open detail
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault()
+              isResizing.current = true
+              document.body.style.cursor = 'col-resize'
+              document.body.style.userSelect = 'none'
+            }}
+            style={{
+              width: 6,
+              cursor: 'col-resize',
+              backgroundColor: '#e0e0e0',
+              borderRight: '1px solid #ccc',
+              borderLeft: '1px solid #ccc',
+              zIndex: 100,
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ccc'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e0e0e0'}
+          >
+            <div style={{ width: 2, height: 20, backgroundColor: '#888', borderRadius: 1 }} />
+          </div>
+        </>
       )}
 
       <div style={{ flex: 1, position: 'relative' }} onWheel={onWheel}>
