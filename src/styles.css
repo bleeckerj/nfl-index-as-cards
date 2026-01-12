@@ -126,3 +126,21 @@ html,body,#root { height: 100%; margin: 0; font-family: 'Inter', sans-serif; }
   display: flex;
   gap: 6px;
 }
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.psychedelic-shimmer {
+  background: linear-gradient(270deg, #ffc0cb, #87ceeb, #ffffff, #ffc0cb);
+  background-size: 400% 400%;
+  animation: shimmer 10s ease infinite;
+}

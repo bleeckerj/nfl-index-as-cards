@@ -24,7 +24,8 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
       date: '',
       opacity: 1,
       showDetails: true,
-      isInfoCard: false
+      isInfoCard: false,
+      noCoverImage: false
     }
   }
 
@@ -55,7 +56,7 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
   }
 
   component(shape) {
-    const { w, h, title, image, summary, date, tags = [], opacity = 1, collection, showDetails = true, isInfoCard = false } = shape.props
+    const { w, h, title, image, summary, date, tags = [], opacity = 1, collection, showDetails = true, isInfoCard = false, noCoverImage = false } = shape.props
     const [aspectRatio, setAspectRatio] = React.useState(null)
     const titleH = 30
     const tagsH = showDetails ? 40 : 0
@@ -248,7 +249,9 @@ export class CardShapeUtil extends BaseBoxShapeUtil {
             </div>
           </div>
           <div style={{ height: imageH, overflow: 'hidden', ...imageStyle }}>
-            {image ? (
+            {noCoverImage ? (
+              <div className="psychedelic-shimmer" style={{ width: '100%', height: '100%' }} />
+            ) : image ? (
               <img
                 alt=""
                 src={image}

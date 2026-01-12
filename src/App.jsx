@@ -244,7 +244,8 @@ export default function App() {
               tags: card.tags || [],
               date: card.date || '',
               opacity: 1,
-              showDetails: true
+              showDetails: true,
+              noCoverImage: card.noCoverImage
             },
             meta: { cardId: id }
           }
@@ -272,7 +273,8 @@ export default function App() {
               collection: card.collection,
               tags: card.tags || [],
               date: card.date || '',
-              opacity: 1
+              opacity: 1,
+              noCoverImage: card.noCoverImage
             }
           }
         }).filter(Boolean)
