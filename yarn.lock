@@ -254,15 +254,15 @@
   resolved "https://registry.npmjs.org/@cloudflare/kv-asset-handler/-/kv-asset-handler-0.4.2.tgz"
   integrity sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ==
 
-"@cloudflare/unenv-preset@2.12.0":
-  version "2.12.0"
-  resolved "https://registry.npmjs.org/@cloudflare/unenv-preset/-/unenv-preset-2.12.0.tgz"
-  integrity sha512-NK4vN+2Z/GbfGS4BamtbbVk1rcu5RmqaYGiyHJQrA09AoxdZPHDF3W/EhgI0YSK8p3vRo/VNCtbSJFPON7FWMQ==
+"@cloudflare/unenv-preset@2.15.0":
+  version "2.15.0"
+  resolved "https://registry.npmjs.org/@cloudflare/unenv-preset/-/unenv-preset-2.15.0.tgz"
+  integrity sha512-EGYmJaGZKWl+X8tXxcnx4v2bOZSjQeNI5dWFeXivgX9+YCT69AkzHHwlNbVpqtEUTbew8eQurpyOpeN8fg00nw==
 
-"@cloudflare/workerd-darwin-arm64@1.20260205.0":
-  version "1.20260205.0"
-  resolved "https://registry.npmjs.org/@cloudflare/workerd-darwin-arm64/-/workerd-darwin-arm64-1.20260205.0.tgz"
-  integrity sha512-402ZqLz+LrG0NDXp7Hn7IZbI0DyhjNfjAlVenb0K3yod9KCuux0u3NksNBvqJx0mIGHvVR4K05h+jfT5BTHqGA==
+"@cloudflare/workerd-darwin-arm64@1.20260310.1":
+  version "1.20260310.1"
+  resolved "https://registry.npmjs.org/@cloudflare/workerd-darwin-arm64/-/workerd-darwin-arm64-1.20260310.1.tgz"
+  integrity sha512-h/Vl3XrYYPI6yFDE27XO1QPq/1G1lKIM8tzZGIWYpntK3IN5XtH3Ee/sLaegpJ49aIJoqhF2mVAZ6Yw+Vk2gJw==
 
 "@cspotcode/source-map-support@0.8.1":
   version "0.8.1"
@@ -276,15 +276,15 @@
   resolved "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.21.5.tgz"
   integrity sha512-DwqXqZyuk5AiWWf3UfLiRDJ5EDd49zg6O9wclZ7kUMv2WRFr4HKjXp/5t8JZ11QbQfUS6/cRCKGwYhtNAY88kQ==
 
-"@esbuild/darwin-arm64@0.27.0":
-  version "0.27.0"
-  resolved "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.27.0.tgz"
-  integrity sha512-uJOQKYCcHhg07DL7i8MzjvS2LaP7W7Pn/7uA0B5S1EnqAirJtbyw4yC5jQ5qcFjHK9l6o/MX9QisBg12kNkdHg==
+"@esbuild/darwin-arm64@0.27.3":
+  version "0.27.3"
+  resolved "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.27.3.tgz"
+  integrity sha512-Re491k7ByTVRy0t3EKWajdLIr0gz2kKKfzafkth4Q8A5n1xTHrkqZgLLjFEHVD+AXdUGgQMq+Godfq45mGpCKg==
 
 "@img/colour@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.npmjs.org/@img/colour/-/colour-1.0.0.tgz"
-  integrity sha512-A5P/LfWGFSl6nsckYtjw9da+19jB8hkJ6ACTGcDfEJ0aE+l2n2El7dsVM7UVHZQ9s2lmYMWlrS21YLy2IR1LUw==
+  version "1.1.0"
+  resolved "https://registry.npmjs.org/@img/colour/-/colour-1.1.0.tgz"
+  integrity sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==
 
 "@img/sharp-darwin-arm64@0.34.5":
   version "0.34.5"
@@ -650,37 +650,37 @@ esbuild@^0.21.3:
     "@esbuild/win32-ia32" "0.21.5"
     "@esbuild/win32-x64" "0.21.5"
 
-esbuild@0.27.0:
-  version "0.27.0"
-  resolved "https://registry.npmjs.org/esbuild/-/esbuild-0.27.0.tgz"
-  integrity sha512-jd0f4NHbD6cALCyGElNpGAOtWxSq46l9X/sWB0Nzd5er4Kz2YTm+Vl0qKFT9KUJvD8+fiO8AvoHhFvEatfVixA==
+esbuild@0.27.3:
+  version "0.27.3"
+  resolved "https://registry.npmjs.org/esbuild/-/esbuild-0.27.3.tgz"
+  integrity sha512-8VwMnyGCONIs6cWue2IdpHxHnAjzxnw2Zr7MkVxB2vjmQ2ivqGFb4LEG3SMnv0Gb2F/G/2yA8zUaiL1gywDCCg==
   optionalDependencies:
-    "@esbuild/aix-ppc64" "0.27.0"
-    "@esbuild/android-arm" "0.27.0"
-    "@esbuild/android-arm64" "0.27.0"
-    "@esbuild/android-x64" "0.27.0"
-    "@esbuild/darwin-arm64" "0.27.0"
-    "@esbuild/darwin-x64" "0.27.0"
-    "@esbuild/freebsd-arm64" "0.27.0"
-    "@esbuild/freebsd-x64" "0.27.0"
-    "@esbuild/linux-arm" "0.27.0"
-    "@esbuild/linux-arm64" "0.27.0"
-    "@esbuild/linux-ia32" "0.27.0"
-    "@esbuild/linux-loong64" "0.27.0"
-    "@esbuild/linux-mips64el" "0.27.0"
-    "@esbuild/linux-ppc64" "0.27.0"
-    "@esbuild/linux-riscv64" "0.27.0"
-    "@esbuild/linux-s390x" "0.27.0"
-    "@esbuild/linux-x64" "0.27.0"
-    "@esbuild/netbsd-arm64" "0.27.0"
-    "@esbuild/netbsd-x64" "0.27.0"
-    "@esbuild/openbsd-arm64" "0.27.0"
-    "@esbuild/openbsd-x64" "0.27.0"
-    "@esbuild/openharmony-arm64" "0.27.0"
-    "@esbuild/sunos-x64" "0.27.0"
-    "@esbuild/win32-arm64" "0.27.0"
-    "@esbuild/win32-ia32" "0.27.0"
-    "@esbuild/win32-x64" "0.27.0"
+    "@esbuild/aix-ppc64" "0.27.3"
+    "@esbuild/android-arm" "0.27.3"
+    "@esbuild/android-arm64" "0.27.3"
+    "@esbuild/android-x64" "0.27.3"
+    "@esbuild/darwin-arm64" "0.27.3"
+    "@esbuild/darwin-x64" "0.27.3"
+    "@esbuild/freebsd-arm64" "0.27.3"
+    "@esbuild/freebsd-x64" "0.27.3"
+    "@esbuild/linux-arm" "0.27.3"
+    "@esbuild/linux-arm64" "0.27.3"
+    "@esbuild/linux-ia32" "0.27.3"
+    "@esbuild/linux-loong64" "0.27.3"
+    "@esbuild/linux-mips64el" "0.27.3"
+    "@esbuild/linux-ppc64" "0.27.3"
+    "@esbuild/linux-riscv64" "0.27.3"
+    "@esbuild/linux-s390x" "0.27.3"
+    "@esbuild/linux-x64" "0.27.3"
+    "@esbuild/netbsd-arm64" "0.27.3"
+    "@esbuild/netbsd-x64" "0.27.3"
+    "@esbuild/openbsd-arm64" "0.27.3"
+    "@esbuild/openbsd-x64" "0.27.3"
+    "@esbuild/openharmony-arm64" "0.27.3"
+    "@esbuild/sunos-x64" "0.27.3"
+    "@esbuild/win32-arm64" "0.27.3"
+    "@esbuild/win32-ia32" "0.27.3"
+    "@esbuild/win32-x64" "0.27.3"
 
 escalade@^3.2.0:
   version "3.2.0"
@@ -777,15 +777,15 @@ magic-string@^0.30.21:
   dependencies:
     "@jridgewell/sourcemap-codec" "^1.5.5"
 
-miniflare@4.20260205.0:
-  version "4.20260205.0"
-  resolved "https://registry.npmjs.org/miniflare/-/miniflare-4.20260205.0.tgz"
-  integrity sha512-jG1TknEDeFqcq/z5gsOm1rKeg4cNG7ruWxEuiPxl3pnQumavxo8kFpeQC6XKVpAhh2PI9ODGyIYlgd77sTHl5g==
+miniflare@4.20260310.0:
+  version "4.20260310.0"
+  resolved "https://registry.npmjs.org/miniflare/-/miniflare-4.20260310.0.tgz"
+  integrity sha512-uC5vNPenFpDSj5aUU3wGSABG6UUqMr+Xs1m4AkCrTHo37F4Z6xcQw5BXqViTfPDVT/zcYH1UgTVoXhr1l6ZMXw==
   dependencies:
     "@cspotcode/source-map-support" "0.8.1"
     sharp "^0.34.5"
     undici "7.18.2"
-    workerd "1.20260205.0"
+    workerd "1.20260310.1"
     ws "8.18.0"
     youch "4.1.0-beta.10"
 
@@ -1010,30 +1010,30 @@ update-browserslist-db@^1.2.0:
   optionalDependencies:
     fsevents "~2.3.3"
 
-workerd@^1.20260115.0, workerd@1.20260205.0:
-  version "1.20260205.0"
-  resolved "https://registry.npmjs.org/workerd/-/workerd-1.20260205.0.tgz"
-  integrity sha512-CcMH5clHwrH8VlY7yWS9C/G/C8g9czIz1yU3akMSP9Z3CkEMFSoC3GGdj5G7Alw/PHEeez1+1IrlYger4pwu+w==
+"workerd@1.20260301.1 || ~1.20260302.1 || ~1.20260303.1 || ~1.20260304.1 || >1.20260305.0 <2.0.0-0", workerd@1.20260310.1:
+  version "1.20260310.1"
+  resolved "https://registry.npmjs.org/workerd/-/workerd-1.20260310.1.tgz"
+  integrity sha512-yawXhypXXHtArikJj15HOMknNGikpBbSg2ZDe6lddUbqZnJXuCVSkgc/0ArUeVMG1jbbGvpst+REFtKwILvRTQ==
   optionalDependencies:
-    "@cloudflare/workerd-darwin-64" "1.20260205.0"
-    "@cloudflare/workerd-darwin-arm64" "1.20260205.0"
-    "@cloudflare/workerd-linux-64" "1.20260205.0"
-    "@cloudflare/workerd-linux-arm64" "1.20260205.0"
-    "@cloudflare/workerd-windows-64" "1.20260205.0"
+    "@cloudflare/workerd-darwin-64" "1.20260310.1"
+    "@cloudflare/workerd-darwin-arm64" "1.20260310.1"
+    "@cloudflare/workerd-linux-64" "1.20260310.1"
+    "@cloudflare/workerd-linux-arm64" "1.20260310.1"
+    "@cloudflare/workerd-windows-64" "1.20260310.1"
 
-wrangler@^4.63.0:
-  version "4.63.0"
-  resolved "https://registry.npmjs.org/wrangler/-/wrangler-4.63.0.tgz"
-  integrity sha512-+R04jF7Eb8K3KRMSgoXpcIdLb8GC62eoSGusYh1pyrSMm/10E0hbKkd7phMJO4HxXc6R7mOHC5SSoX9eof30Uw==
+wrangler@^4.72.0:
+  version "4.72.0"
+  resolved "https://registry.npmjs.org/wrangler/-/wrangler-4.72.0.tgz"
+  integrity sha512-bKkb8150JGzJZJWiNB2nu/33smVfawmfYiecA6rW4XH7xS23/jqMbgpdelM34W/7a1IhR66qeQGVqTRXROtAZg==
   dependencies:
     "@cloudflare/kv-asset-handler" "0.4.2"
-    "@cloudflare/unenv-preset" "2.12.0"
+    "@cloudflare/unenv-preset" "2.15.0"
     blake3-wasm "2.1.5"
-    esbuild "0.27.0"
-    miniflare "4.20260205.0"
+    esbuild "0.27.3"
+    miniflare "4.20260310.0"
     path-to-regexp "6.3.0"
     unenv "2.0.0-rc.24"
-    workerd "1.20260205.0"
+    workerd "1.20260310.1"
   optionalDependencies:
     fsevents "~2.3.2"
 
