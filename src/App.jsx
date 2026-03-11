@@ -16,6 +16,49 @@ const cardsData = [...rawCardsData].sort((a, b) => {
   return db - da
 })
 
+function updateUrlWithCard(cardId) {
+  if (typeof window === 'undefined') return
+  const url = new URL(window.location.href)
+  if (cardId) url.searchParams.set('card', cardId)
+  else url.searchParams.delete('card')
+  window.history.replaceState({}, '', url.toString())
+}
+
+function setOgMeta(card) {
+  if (typeof document === 'undefined') return
+  const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : ''
+  const targetUrl = card?.id ? `${baseUrl}?card=${encodeURIComponent(card.id)}` : baseUrl
+  const title = card?.title ? `${card.title} | Near Future Laboratory` : 'Near Future Laboratory Index (as) Cards'
+  const description = card?.summary || 'Explore the Near Future Laboratory catalog as cards.'
+  const image = card?.image || '/og-default.png'
+
+  const ensureMeta = (property, content) => {
+    let el = document.querySelector(`meta[property="${property}"]`)
+    if (!el) {
+      el = document.createElement('meta')
+      el.setAttribute('property', property)
+      document.head.appendChild(el)
+    }
+    el.setAttribute('content', content)
+  }
+
+  ensureMeta('og:title', title)
+  ensureMeta('og:description', description)
+  ensureMeta('og:type', 'website')
+  ensureMeta('og:image', image)
+  ensureMeta('og:url', targetUrl)
+
+  const twitterCard = document.querySelector('meta[name="twitter:card"]') || (() => {
+    const el = document.createElement('meta')
+    el.setAttribute('name', 'twitter:card')
+    document.head.appendChild(el)
+    return el
+  })()
+  twitterCard.setAttribute('content', 'summary_large_image')
+
+  document.title = title
+}
+
 function calculateInitialLayout() {
   const pos = {}
   const GAP = 20
@@ -73,6 +116,7 @@ export default function App() {
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(30)
+  const pendingCardId = useRef(null)
   const [isLeftPaneCollapsed, setIsLeftPaneCollapsed] = useState(false)
   const [detailPaneWidth, setDetailPaneWidth] = useState(600)
   const isResizing = useRef(false)
@@ -138,6 +182,21 @@ export default function App() {
     setPositions(positionsCache.current)
   }, [])
 
+  // Handle deep-link card param (?card=card_id)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const cardParam = params.get('card')
+    if (cardParam) {
+      pendingCardId.current = cardParam
+      const idx = cardsData.findIndex(c => c.id === cardParam)
+      if (idx >= 0) {
+        const page = Math.floor(idx / pageSize) + 1
+        setCurrentPage(page)
+      }
+    }
+  }, [pageSize])
+
   const visibleIds = useMemo(
     () =>
       new Set(
@@ -156,6 +215,41 @@ export default function App() {
   useEffect(() => {
     setCurrentPage(1)
   }, [activeCollections, activeTags, activeYears])
+
+  // If we have a pending deep-linked card, select and zoom to it once shapes exist
+  useEffect(() => {
+    if (!appReady || !pendingCardId.current || !editorRef.current) return
+    const editor = editorRef.current
+    const cardId = pendingCardId.current
+    const shapeId = createShapeId(cardId)
+    const card = cardsData.find(c => c.id === cardId)
+
+    if (!card) {
+      pendingCardId.current = null
+      updateUrlWithCard(null)
+      setOgMeta(null)
+      return
+    }
+
+    const trySelect = () => {
+      const shape = editor.getShape(shapeId)
+      if (!shape) return false
+      editor.select(shapeId)
+      editor.zoomToSelection({ animation: { duration: 320 } })
+      if (card) {
+        setSelectedCard(card)
+      }
+      pendingCardId.current = null
+      return true
+    }
+
+    if (!trySelect()) {
+      const raf = requestAnimationFrame(() => {
+        trySelect()
+      })
+      return () => cancelAnimationFrame(raf)
+    }
+  }, [appReady, currentPage, pageSize])
 
   // visibility + prop sync (add/remove shapes instead of opacity)
   useEffect(() => {
@@ -459,6 +553,9 @@ export default function App() {
               setSelectedCard(card || null)
               setViewingUrl(null)
             }
+          } else if (selectedIds.length === 0) {
+            setSelectedCard(null)
+            setViewingUrl(null)
           }
         }
       }
@@ -490,6 +587,12 @@ export default function App() {
       window.localStorage.setItem('panel:fade', String(timedFadeSeconds))
     }
   }, [timedSeconds, timedFadeSeconds])
+
+  useEffect(() => {
+    if (pendingCardId.current) return
+    updateUrlWithCard(selectedCard?.id ?? null)
+    setOgMeta(selectedCard)
+  }, [selectedCard])
 
   // fade + delete timed lines / draws (smooth via rAF)
   useEffect(() => {
